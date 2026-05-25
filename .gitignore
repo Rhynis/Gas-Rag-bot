@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+*.egg-info/
+dist/
+build/
+
+# Node.js
+node_modules/
+.next/
+.turbo/
+.vercel/
+out/
+*.log
+.npm/
+.yarn/
+
+# IDEs
+.vscode/
+!.vscode/settings.json.example
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Project specific
+/uploads/
+/tmp/
+/backend/data/cache/
+migrations/versions/__pycache__/
+
+# Reports and generated output
+reports/*.md
+backend/reports/*.md
+frontend/coverage/
+backend/htmlcov/
+
+# Planning and build plan documents
+gasbot_build_plan*.md
+
+# TypeScript build cache
+frontend/tsconfig.tsbuildinfo

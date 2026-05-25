@@ -1,0 +1,58 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main]
+    paths: ["backend/**", ".github/workflows/ci-backend.yml"]
+  pull_request:
+    paths: ["backend/**"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: gasbot
+          POSTGRES_PASSWORD: gasbot_test
+          POSTGRES_DB: gasbot_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports: ["5432:5432"]
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports: ["6379:6379"]
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://gasbot:gasbot_test@localhost:5432/gasbot_test
+      REDIS_URL: redis://localhost:6379/0
+      JWT_SECRET_KEY: test_secret_key_at_least_32_characters_long_for_testing
+      ENVIRONMENT: development
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+      - run: pip install -r requirements.txt -r requirements-dev.txt
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: mypy app/
+      - run: alembic upgrade head
+      - run: pytest --cov --cov-fail-under=70
+      - run: pip-audit --strict
