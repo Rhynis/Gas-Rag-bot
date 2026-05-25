@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
+import { LoginForm } from '@/components/auth/login-form'
 
 export const metadata: Metadata = {
   title: 'Đăng nhập | GasBot Vietnam',
@@ -6,9 +8,11 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <div className="space-y-2">
+    <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Đăng nhập</h1>
-      <p className="text-sm text-slate-600">Form đăng nhập sẽ được hoàn thiện ở Phase 2.1.</p>
+      <Suspense fallback={null}>
+        <LoginForm />
+      </Suspense>
     </div>
   )
 }

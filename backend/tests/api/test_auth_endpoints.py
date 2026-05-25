@@ -1,0 +1,193 @@
+"""Tests for auth API endpoints."""
+
+from typing import Any
+
+import pytest
+from httpx import AsyncClient
+
+from app.api.v1.dependencies.auth import get_auth_service
+from app.main import app
+from app.services import auth_service as auth_module
+from app.services.auth_service import AuthService
+
+pytestmark = pytest.mark.asyncio
+
+PASSWORD = "StrongPass123!"
+
+
+@pytest.fixture(autouse=True)
+def fast_password_hashing(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Patch bcrypt helpers to keep endpoint tests fast."""
+
+    def fake_hash(password: str) -> str:
+        return f"hashed:{password}"
+
+    def fake_verify(password: str, hashed_password: str) -> bool:
+        return hashed_password == f"hashed:{password}"
+
+    monkeypatch.setattr(auth_module, "get_password_hash", fake_hash)
+    monkeypatch.setattr(auth_module, "verify_password", fake_verify)
+
+
+@pytest.fixture(autouse=True)
+def auth_override(fake_user_repository: Any, mock_redis: Any) -> None:
+    """Override AuthService dependency with fake dependencies."""
+    service = AuthService(fake_user_repository, mock_redis)
+    app.dependency_overrides[get_auth_service] = lambda: service
+    app.state.limiter.reset()
+    yield
+    app.dependency_overrides.clear()
+    app.state.limiter.reset()
+
+
+def register_payload(email: str = "user@example.com", password: str = PASSWORD) -> dict[str, str]:
+    return {
+        "email": email,
+        "password": password,
+        "full_name": "Nguyen Van A",
+        "phone": "0901234567",
+    }
+
+
+async def test_register_endpoint_returns_201(test_client: AsyncClient) -> None:
+    response = await test_client.post("/api/v1/auth/register", json=register_payload())
+
+    assert response.status_code == 201
+    assert response.json()["email"] == "user@example.com"
+    assert "hashed_password" not in response.text
+
+
+async def test_register_with_duplicate_email_returns_409(test_client: AsyncClient) -> None:
+    await test_client.post("/api/v1/auth/register", json=register_payload())
+
+    response = await test_client.post(
+        "/api/v1/auth/register",
+        json=register_payload("USER@example.com"),
+    )
+
+    assert response.status_code == 409
+    assert response.json()["error_code"] == "email_already_exists"
+
+
+async def test_register_with_weak_password_returns_422(test_client: AsyncClient) -> None:
+    response = await test_client.post(
+        "/api/v1/auth/register",
+        json=register_payload(password="weak"),
+    )
+
+    assert response.status_code == 422
+
+
+async def test_register_with_invalid_phone_returns_422(test_client: AsyncClient) -> None:
+    payload = register_payload()
+    payload["phone"] = "123"
+
+    response = await test_client.post("/api/v1/auth/register", json=payload)
+
+    assert response.status_code == 422
+
+
+async def test_login_returns_tokens(test_client: AsyncClient) -> None:
+    await test_client.post("/api/v1/auth/register", json=register_payload())
+
+    response = await test_client.post(
+        "/api/v1/auth/login",
+        json={"email": "user@example.com", "password": PASSWORD},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["token_type"] == "bearer"
+    assert "access_token" not in body
+    assert "refresh_token" not in body
+    assert response.cookies.get("gasbot_access_token")
+    assert response.cookies.get("gasbot_refresh_token")
+    set_cookie = response.headers.get_list("set-cookie")
+    assert any(
+        "gasbot_access_token=" in value and "HttpOnly" in value and "Path=/" in value
+        for value in set_cookie
+    )
+    assert any(
+        "gasbot_refresh_token=" in value and "HttpOnly" in value and "Path=/api/v1/auth" in value
+        for value in set_cookie
+    )
+
+
+async def test_login_with_wrong_password_returns_401(test_client: AsyncClient) -> None:
+    await test_client.post("/api/v1/auth/register", json=register_payload())
+
+    response = await test_client.post(
+        "/api/v1/auth/login",
+        json={"email": "user@example.com", "password": "wrong"},
+    )
+
+    assert response.status_code == 401
+
+
+async def test_login_rate_limit_after_5_attempts_per_ip(test_client: AsyncClient) -> None:
+    await test_client.post("/api/v1/auth/register", json=register_payload())
+
+    for _ in range(5):
+        await test_client.post(
+            "/api/v1/auth/login",
+            json={"email": "user@example.com", "password": "wrong"},
+        )
+    response = await test_client.post(
+        "/api/v1/auth/login",
+        json={"email": "user@example.com", "password": PASSWORD},
+    )
+
+    assert response.status_code == 401
+    assert response.json()["error_code"] == "account_locked"
+
+
+async def test_me_endpoint_returns_current_user(test_client: AsyncClient) -> None:
+    await test_client.post("/api/v1/auth/register", json=register_payload())
+    await test_client.post(
+        "/api/v1/auth/login",
+        json={"email": "user@example.com", "password": PASSWORD},
+    )
+
+    response = await test_client.get("/api/v1/auth/me")
+
+    assert response.status_code == 200
+    assert response.json()["email"] == "user@example.com"
+
+
+async def test_me_endpoint_without_auth_returns_401(test_client: AsyncClient) -> None:
+    response = await test_client.get("/api/v1/auth/me")
+
+    assert response.status_code == 401
+
+
+async def test_protected_endpoint_with_blacklisted_token_returns_401(
+    test_client: AsyncClient,
+) -> None:
+    await test_client.post("/api/v1/auth/register", json=register_payload())
+    login = await test_client.post(
+        "/api/v1/auth/login",
+        json={"email": "user@example.com", "password": PASSWORD},
+    )
+    token = login.cookies["gasbot_access_token"]
+    await test_client.post("/api/v1/auth/logout")
+
+    response = await test_client.get(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 401
+
+
+async def test_refresh_endpoint_with_valid_token(test_client: AsyncClient) -> None:
+    await test_client.post("/api/v1/auth/register", json=register_payload())
+    await test_client.post(
+        "/api/v1/auth/login",
+        json={"email": "user@example.com", "password": PASSWORD},
+    )
+
+    response = await test_client.post("/api/v1/auth/refresh")
+
+    assert response.status_code == 200
+    assert response.cookies.get("gasbot_access_token")
+    assert "access_token" not in response.json()

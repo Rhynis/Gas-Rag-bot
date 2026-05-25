@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Toaster } from 'sonner'
 import { Providers } from '@/components/providers'
+import { UserMenu } from '@/components/shared/user-menu'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -29,7 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <nav className="flex items-center gap-4 text-sm">
                   <Link href="/products">Sản phẩm</Link>
                   <Link href="/cart">Giỏ hàng</Link>
-                  <Link href="/login">Đăng nhập</Link>
+                  <UserMenu />
                 </nav>
               </div>
             </header>
