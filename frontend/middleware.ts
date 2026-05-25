@@ -1,32 +1,62 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { updateSession } from '@/lib/supabase/middleware'
+
+interface TokenPayload {
+  role?: string
+  exp?: number
+}
+
+function parsePayload(token: string | undefined): TokenPayload | null {
+  if (!token) {
+    return null
+  }
+  try {
+    const payload = token.split('.')[1]
+    if (!payload) {
+      return null
+    }
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/')
+    return JSON.parse(atob(normalized)) as TokenPayload
+  } catch {
+    return null
+  }
+}
 
 /** Next.js middleware for authentication and route protection. */
-export async function middleware(request: NextRequest) {
-  const { response, user } = await updateSession(request)
+export function middleware(request: NextRequest) {
+  const response = NextResponse.next()
   const pathname = request.nextUrl.pathname
+  const accessToken = request.cookies.get('gasbot_access_token')?.value
+  const payload = parsePayload(accessToken)
+  const isAuthenticated = Boolean(payload?.exp && payload.exp * 1000 > Date.now())
 
-  const publicRoutes = ['/', '/products', '/track', '/login', '/register']
+  const publicRoutes = [
+    '/',
+    '/products',
+    '/track',
+    '/login',
+    '/register',
+    '/forgot-password',
+    '/reset-password',
+  ]
   const isPublic = publicRoutes.some(
     (route) => pathname === route || pathname.startsWith(route + '/')
   )
 
   if (pathname.startsWith('/admin')) {
-    if (!user) {
+    if (!isAuthenticated) {
       const url = request.nextUrl.clone()
       url.pathname = '/login'
       url.searchParams.set('redirectTo', pathname)
       return NextResponse.redirect(url)
     }
-    const role = user.user_metadata?.role
-    if (role !== 'admin') {
+    if (payload?.role !== 'admin') {
       const url = request.nextUrl.clone()
       url.pathname = '/'
       return NextResponse.redirect(url)
     }
   }
 
-  if (!isPublic && !user) {
+  if (!isPublic && !isAuthenticated) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('redirectTo', pathname)

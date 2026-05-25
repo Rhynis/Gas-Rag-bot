@@ -1,6 +1,5 @@
 import axios, { type AxiosError, type AxiosInstance, type InternalAxiosRequestConfig } from 'axios'
 import { v4 as uuidv4 } from 'uuid'
-import { createClient } from '@/lib/supabase/client'
 
 export class ApiError extends Error {
   constructor(
@@ -18,19 +17,11 @@ function createApiClient(): AxiosInstance {
   const client = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000',
     timeout: 30000,
+    withCredentials: true,
     headers: { 'Content-Type': 'application/json' },
   })
 
-  client.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
-    const supabase = createClient()
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
-
-    if (session?.access_token) {
-      config.headers.Authorization = `Bearer ${session.access_token}`
-    }
-
+  client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     const method = config.method?.toUpperCase()
     if (method === 'POST' || method === 'PATCH' || method === 'PUT') {
       if (!config.headers['Idempotency-Key']) {
@@ -43,7 +34,25 @@ function createApiClient(): AxiosInstance {
 
   client.interceptors.response.use(
     (response) => response,
-    (error: AxiosError) => {
+    async (error: AxiosError) => {
+      const originalRequest = error.config as
+        | (InternalAxiosRequestConfig & { _retry?: boolean })
+        | undefined
+      const requestUrl = originalRequest?.url ?? ''
+
+      if (
+        error.response?.status === 401 &&
+        originalRequest &&
+        !originalRequest._retry &&
+        !requestUrl.includes('/auth/login') &&
+        !requestUrl.includes('/auth/refresh') &&
+        !requestUrl.includes('/auth/logout')
+      ) {
+        originalRequest._retry = true
+        await client.post('/api/v1/auth/refresh')
+        return client(originalRequest)
+      }
+
       if (error.response) {
         const data = error.response.data as { detail?: string; error_code?: string }
         throw new ApiError(

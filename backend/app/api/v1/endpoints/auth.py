@@ -1,0 +1,180 @@
+"""Authentication endpoints."""
+
+from typing import Annotated
+
+from fastapi import APIRouter, Body, Depends, Request, Response, status
+
+from app.api.v1.dependencies.auth import (
+    get_auth_service,
+    get_current_access_token,
+    get_current_active_user,
+)
+from app.core.config import get_settings
+from app.core.exceptions import UnauthorizedException
+from app.core.rate_limit import limiter
+from app.models.user import User
+from app.schemas.user import (
+    LoginRequest,
+    LoginResponse,
+    PasswordChangeRequest,
+    PasswordResetConfirm,
+    PasswordResetRequest,
+    TokenRefreshRequest,
+    TokenRefreshResponse,
+    UserCreate,
+    UserResponse,
+)
+from app.services.auth_service import (
+    ACCESS_TOKEN_COOKIE,
+    ACCESS_TOKEN_COOKIE_PATH,
+    REFRESH_TOKEN_COOKIE,
+    REFRESH_TOKEN_COOKIE_PATH,
+    AuthResult,
+    AuthService,
+)
+
+router = APIRouter()
+settings = get_settings()
+
+
+def _set_auth_cookies(response: Response, result: AuthResult) -> None:
+    response.set_cookie(
+        ACCESS_TOKEN_COOKIE,
+        result.access_token,
+        httponly=True,
+        secure=settings.is_production,
+        samesite="lax",
+        path=ACCESS_TOKEN_COOKIE_PATH,
+    )
+    response.set_cookie(
+        REFRESH_TOKEN_COOKIE,
+        result.refresh_token,
+        httponly=True,
+        secure=settings.is_production,
+        samesite="lax",
+        path=REFRESH_TOKEN_COOKIE_PATH,
+    )
+
+
+def _delete_auth_cookies(response: Response) -> None:
+    response.delete_cookie(ACCESS_TOKEN_COOKIE, path=ACCESS_TOKEN_COOKIE_PATH, samesite="lax")
+    response.delete_cookie(REFRESH_TOKEN_COOKIE, path=REFRESH_TOKEN_COOKIE_PATH, samesite="lax")
+
+
+@router.post(
+    "/register",
+    status_code=status.HTTP_201_CREATED,
+    response_model=UserResponse,
+    summary="Register a customer account",
+)
+@limiter.limit("5/minute")
+async def register(
+    request: Request,
+    payload: UserCreate,
+    auth_service: Annotated[AuthService, Depends(get_auth_service)],
+) -> User:
+    """Create a new customer account."""
+    return await auth_service.register_user(
+        email=payload.email,
+        password=payload.password,
+        full_name=payload.full_name,
+        phone=payload.phone,
+    )
+
+
+@router.post("/login", response_model=LoginResponse, summary="Log in with email and password")
+@limiter.limit("5/minute")
+async def login(
+    request: Request,
+    response: Response,
+    payload: LoginRequest,
+    auth_service: Annotated[AuthService, Depends(get_auth_service)],
+) -> LoginResponse:
+    """Authenticate credentials and set auth cookies."""
+    result = await auth_service.login_user(payload.email, payload.password)
+    _set_auth_cookies(response, result)
+    return LoginResponse(user=UserResponse.model_validate(result.user))
+
+
+@router.post("/refresh", response_model=TokenRefreshResponse, summary="Refresh auth cookies")
+@limiter.limit("30/minute")
+async def refresh(
+    request: Request,
+    response: Response,
+    auth_service: Annotated[AuthService, Depends(get_auth_service)],
+    payload: Annotated[TokenRefreshRequest | None, Body()] = None,
+) -> TokenRefreshResponse:
+    """Rotate refresh token from cookie or optional body."""
+    refresh_token = request.cookies.get(REFRESH_TOKEN_COOKIE)
+    if not refresh_token and payload:
+        refresh_token = payload.refresh_token
+    if not refresh_token:
+        raise UnauthorizedException("Refresh token required", error_code="not_authenticated")
+    result = await auth_service.refresh_access_token(refresh_token)
+    _set_auth_cookies(response, result)
+    return TokenRefreshResponse(user=UserResponse.model_validate(result.user))
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT, summary="Log out")
+@limiter.limit("30/minute")
+async def logout(
+    request: Request,
+    token: Annotated[str, Depends(get_current_access_token)],
+    auth_service: Annotated[AuthService, Depends(get_auth_service)],
+) -> Response:
+    """Blacklist the active access token and clear auth cookies."""
+    refresh_token = request.cookies.get(REFRESH_TOKEN_COOKIE)
+    await auth_service.logout_user(token, refresh_token)
+    response = Response(status_code=status.HTTP_204_NO_CONTENT)
+    _delete_auth_cookies(response)
+    return response
+
+
+@router.post("/password/change", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("5/minute")
+async def change_password(
+    request: Request,
+    payload: PasswordChangeRequest,
+    token: Annotated[str, Depends(get_current_access_token)],
+    user: Annotated[User, Depends(get_current_active_user)],
+    auth_service: Annotated[AuthService, Depends(get_auth_service)],
+) -> Response:
+    """Change password and revoke the current access token."""
+    await auth_service.change_password(user.id, payload.old_password, payload.new_password, token)
+    response = Response(status_code=status.HTTP_204_NO_CONTENT)
+    _delete_auth_cookies(response)
+    return response
+
+
+@router.post("/password/reset-request", status_code=status.HTTP_200_OK)
+@limiter.limit("3/minute")
+async def request_password_reset(
+    request: Request,
+    payload: PasswordResetRequest,
+    auth_service: Annotated[AuthService, Depends(get_auth_service)],
+) -> dict[str, str]:
+    """Request a password reset without revealing whether the email exists."""
+    await auth_service.request_password_reset(payload.email)
+    return {"detail": "Nếu email tồn tại, hướng dẫn đặt lại mật khẩu đã được gửi."}
+
+
+@router.post("/password/reset", status_code=status.HTTP_200_OK)
+@limiter.limit("5/minute")
+async def reset_password(
+    request: Request,
+    payload: PasswordResetConfirm,
+    auth_service: Annotated[AuthService, Depends(get_auth_service)],
+) -> dict[str, str]:
+    """Reset password using a valid reset token."""
+    await auth_service.reset_password(payload.token, payload.new_password)
+    return {"detail": "Mật khẩu đã được cập nhật."}
+
+
+@router.get("/me", response_model=UserResponse, summary="Get current user")
+@limiter.limit("60/minute")
+async def me(
+    request: Request,
+    user: Annotated[User, Depends(get_current_active_user)],
+) -> User:
+    """Return current authenticated user."""
+    return user

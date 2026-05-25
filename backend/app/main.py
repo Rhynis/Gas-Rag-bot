@@ -6,19 +6,19 @@ from typing import Any
 
 import sentry_sdk
 from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from redis.asyncio import Redis
 from redis.exceptions import RedisError
-from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
 
 from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.exceptions import GasBotException
 from app.core.logging import configure_logging, get_logger
+from app.core.rate_limit import limiter
 from app.core.security_middleware import (
     AuditLogMiddleware,
     RequestIdMiddleware,
@@ -27,7 +27,6 @@ from app.core.security_middleware import (
 from app.db.session import check_db_health
 
 settings = get_settings()
-limiter = Limiter(key_func=get_remote_address)
 logger = get_logger(__name__)
 
 
@@ -96,7 +95,7 @@ def create_app() -> FastAPI:
         return JSONResponse(
             status_code=422,
             content={
-                "detail": exc.errors(),
+                "detail": jsonable_encoder(exc.errors()),
                 "error_code": "request_validation_error",
                 "request_id": getattr(request.state, "request_id", None),
             },

@@ -1,14 +1,14 @@
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
+[tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "B", "A", "C4", "UP", "RUF", "S", "BLE", "ASYNC"]
 ignore = ["S101", "S104", "N818"]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101", "S105", "S106"]
 "migrations/*" = ["E501"]
-"app/main.py" = ["type-arg"]
-"app/core/security_middleware.py" = ["type-arg"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -16,6 +16,15 @@ strict = true
 ignore_missing_imports = true
 warn_unused_ignores = true
 warn_redundant_casts = true
+
+[[tool.mypy.overrides]]
+module = [
+  "app.main",
+  "app.core.security_middleware",
+  "app.db.redis",
+  "app.api.v1.endpoints.auth",
+]
+disable_error_code = ["type-arg"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
