@@ -83,7 +83,7 @@ async def register(
 
 
 @router.post("/login", response_model=LoginResponse, summary="Log in with email and password")
-@limiter.limit("6/minute")
+@limiter.limit("5/minute")
 async def login(
     request: Request,
     response: Response,
@@ -123,7 +123,8 @@ async def logout(
     auth_service: Annotated[AuthService, Depends(get_auth_service)],
 ) -> Response:
     """Blacklist the active access token and clear auth cookies."""
-    await auth_service.logout_user(token)
+    refresh_token = request.cookies.get(REFRESH_TOKEN_COOKIE)
+    await auth_service.logout_user(token, refresh_token)
     response = Response(status_code=status.HTTP_204_NO_CONTENT)
     _delete_auth_cookies(response)
     return response

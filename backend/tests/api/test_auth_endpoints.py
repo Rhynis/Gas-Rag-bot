@@ -3,7 +3,7 @@
 from typing import Any
 
 import pytest
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 
 from app.api.v1.dependencies.auth import get_auth_service
 from app.main import app
@@ -124,18 +124,23 @@ async def test_login_with_wrong_password_returns_401(test_client: AsyncClient) -
     assert response.status_code == 401
 
 
-async def test_login_rate_limit_after_5_attempts_per_ip(test_client: AsyncClient) -> None:
+async def test_account_locks_after_5_failed_logins(test_client: AsyncClient) -> None:
     await test_client.post("/api/v1/auth/register", json=register_payload())
 
-    for _ in range(5):
-        await test_client.post(
+    for index in range(5):
+        transport = ASGITransport(app=app, client=(f"127.0.0.{index + 1}", 123))
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            await client.post(
+                "/api/v1/auth/login",
+                json={"email": "user@example.com", "password": "wrong"},
+            )
+
+    transport = ASGITransport(app=app, client=("127.0.0.6", 123))
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post(
             "/api/v1/auth/login",
-            json={"email": "user@example.com", "password": "wrong"},
+            json={"email": "user@example.com", "password": PASSWORD},
         )
-    response = await test_client.post(
-        "/api/v1/auth/login",
-        json={"email": "user@example.com", "password": PASSWORD},
-    )
 
     assert response.status_code == 401
     assert response.json()["error_code"] == "account_locked"
@@ -177,6 +182,24 @@ async def test_protected_endpoint_with_blacklisted_token_returns_401(
     )
 
     assert response.status_code == 401
+
+
+async def test_logout_revokes_refresh_token(test_client: AsyncClient) -> None:
+    await test_client.post("/api/v1/auth/register", json=register_payload())
+    login = await test_client.post(
+        "/api/v1/auth/login",
+        json={"email": "user@example.com", "password": PASSWORD},
+    )
+    refresh_token = login.cookies["gasbot_refresh_token"]
+
+    await test_client.post("/api/v1/auth/logout")
+    response = await test_client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": refresh_token},
+    )
+
+    assert response.status_code == 401
+    assert response.json()["error_code"] == "token_revoked"
 
 
 async def test_refresh_endpoint_with_valid_token(test_client: AsyncClient) -> None:

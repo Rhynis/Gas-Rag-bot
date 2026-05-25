@@ -151,6 +151,27 @@ async def test_blacklisted_token_rejected(auth_service: AuthService) -> None:
         await auth_service.verify_token(result.access_token)
 
 
+async def test_logout_blacklists_refresh_token(auth_service: AuthService) -> None:
+    await auth_service.register_user("user@example.com", PASSWORD)
+    result = await auth_service.login_user("user@example.com", PASSWORD)
+
+    await auth_service.logout_user(result.access_token, result.refresh_token)
+
+    with pytest.raises(UnauthorizedException):
+        await auth_service.refresh_access_token(result.refresh_token)
+
+
+async def test_verify_token_rejects_inactive_user(auth_service: AuthService) -> None:
+    user = await auth_service.register_user("user@example.com", PASSWORD)
+    result = await auth_service.login_user("user@example.com", PASSWORD)
+    user.is_active = False
+
+    with pytest.raises(UnauthorizedException) as exc_info:
+        await auth_service.verify_token(result.access_token)
+
+    assert exc_info.value.error_code == "inactive_user"
+
+
 async def test_change_password_invalidates_old_tokens(auth_service: AuthService) -> None:
     user = await auth_service.register_user("user@example.com", PASSWORD)
     result = await auth_service.login_user("user@example.com", PASSWORD)
@@ -177,6 +198,21 @@ async def test_password_reset_flow_end_to_end(
     assert await auth_service.reset_password("reset-token", NEW_PASSWORD) is True
     assert await mock_redis.get("password_reset:reset-token") is None
     assert await auth_service.login_user("user@example.com", NEW_PASSWORD)
+
+
+async def test_password_reset_logs_fingerprint_not_raw_token(
+    auth_service: AuthService,
+    caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    await auth_service.register_user("user@example.com", PASSWORD)
+    monkeypatch.setattr(auth_module, "generate_password_reset_token", lambda: "reset-token")
+    caplog.set_level("INFO")
+
+    await auth_service.request_password_reset("user@example.com")
+
+    assert "reset-token" not in caplog.text
+    assert "password_reset_token_created" in caplog.text
 
 
 async def test_password_reset_unknown_email_returns_success(auth_service: AuthService) -> None:

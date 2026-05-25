@@ -38,7 +38,7 @@ export function PasswordResetRequestForm() {
         <input
           id="email"
           autoComplete="email"
-          className="h-10 w-full rounded-md border px-3 text-sm outline-none focus:ring-2 focus:ring-orange-500"
+          className="h-10 w-full rounded-md border px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
           {...register('email')}
         />
         {errors.email ? <p className="text-sm text-red-600">{errors.email.message}</p> : null}
@@ -46,7 +46,7 @@ export function PasswordResetRequestForm() {
       <Button className="w-full" disabled={isSubmitting} type="submit">
         {isSubmitting ? 'Đang gửi...' : 'Gửi hướng dẫn'}
       </Button>
-      <Link className="block text-center text-sm text-orange-700 hover:underline" href="/login">
+      <Link className="block text-center text-sm text-primary hover:underline" href="/login">
         Quay lại đăng nhập
       </Link>
     </form>
@@ -84,7 +84,7 @@ export function PasswordResetConfirmForm() {
           id="newPassword"
           type="password"
           autoComplete="new-password"
-          className="h-10 w-full rounded-md border px-3 text-sm outline-none focus:ring-2 focus:ring-orange-500"
+          className="h-10 w-full rounded-md border px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
           {...register('newPassword')}
         />
         {errors.newPassword ? (
@@ -99,7 +99,7 @@ export function PasswordResetConfirmForm() {
           id="confirmNewPassword"
           type="password"
           autoComplete="new-password"
-          className="h-10 w-full rounded-md border px-3 text-sm outline-none focus:ring-2 focus:ring-orange-500"
+          className="h-10 w-full rounded-md border px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
           {...register('confirmNewPassword')}
         />
         {errors.confirmNewPassword ? (

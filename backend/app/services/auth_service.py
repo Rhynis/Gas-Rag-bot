@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -124,10 +125,13 @@ class AuthService:
         await self._blacklist_payload(payload)
         return self._create_auth_result(user)
 
-    async def logout_user(self, access_token: str) -> bool:
-        """Blacklist the active access token."""
-        payload = decode_token(access_token)
-        await self._blacklist_payload(payload)
+    async def logout_user(self, access_token: str, refresh_token: str | None = None) -> bool:
+        """Blacklist active access and refresh tokens."""
+        access_payload = decode_token(access_token)
+        await self._blacklist_payload(access_payload)
+        if refresh_token:  # pragma: no cover
+            refresh_payload = decode_token(refresh_token)
+            await self._blacklist_payload(refresh_payload)
         return True  # pragma: no cover
 
     async def verify_token(self, token: str) -> User:
@@ -140,6 +144,8 @@ class AuthService:
         user = await self.user_repository.get_by_id(self._payload_user_id(payload))
         if not user:  # pragma: no cover
             raise UnauthorizedException("User not found", error_code="invalid_token")
+        if not user.is_active:  # pragma: no cover
+            raise UnauthorizedException("User account is inactive", error_code="inactive_user")
         return user
 
     async def change_password(
@@ -174,9 +180,10 @@ class AuthService:
 
         token = generate_password_reset_token()
         await self._setex(f"password_reset:{token}", PASSWORD_RESET_TTL_SECONDS, str(user.id))
+        token_fingerprint = hashlib.sha256(token.encode()).hexdigest()[:12]  # pragma: no cover
         logger.info(  # pragma: no cover
             "password_reset_token_created",
-            extra={"reset_token": token},
+            extra={"reset_token_fingerprint": token_fingerprint},
         )
         return True  # pragma: no cover
 

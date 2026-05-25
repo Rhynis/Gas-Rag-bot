@@ -32,7 +32,7 @@ export function UserMenu() {
   return (
     <details className="relative">
       <summary className="flex cursor-pointer list-none items-center gap-2 rounded-md px-2 py-1.5 hover:bg-slate-100">
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-600 text-sm font-semibold text-white">
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
           {initial}
         </span>
         <span className="hidden max-w-[140px] truncate text-sm sm:inline">

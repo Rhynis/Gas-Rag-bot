@@ -47,7 +47,7 @@ export function RegisterForm() {
         <input
           id="full_name"
           autoComplete="name"
-          className="h-10 w-full rounded-md border px-3 text-sm outline-none focus:ring-2 focus:ring-orange-500"
+          className="h-10 w-full rounded-md border px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
           {...register('full_name')}
         />
         {errors.full_name ? (
@@ -62,7 +62,7 @@ export function RegisterForm() {
         <input
           id="email"
           autoComplete="email"
-          className="h-10 w-full rounded-md border px-3 text-sm outline-none focus:ring-2 focus:ring-orange-500"
+          className="h-10 w-full rounded-md border px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
           {...register('email')}
         />
         {errors.email ? <p className="text-sm text-red-600">{errors.email.message}</p> : null}
@@ -75,7 +75,7 @@ export function RegisterForm() {
         <input
           id="phone"
           autoComplete="tel"
-          className="h-10 w-full rounded-md border px-3 text-sm outline-none focus:ring-2 focus:ring-orange-500"
+          className="h-10 w-full rounded-md border px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
           {...register('phone')}
         />
         {errors.phone ? <p className="text-sm text-red-600">{errors.phone.message}</p> : null}
@@ -89,14 +89,16 @@ export function RegisterForm() {
           id="password"
           type="password"
           autoComplete="new-password"
-          className="h-10 w-full rounded-md border px-3 text-sm outline-none focus:ring-2 focus:ring-orange-500"
+          className="h-10 w-full rounded-md border px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
           {...register('password')}
         />
         <div className="grid grid-cols-5 gap-1" aria-hidden="true">
           {Array.from({ length: 5 }).map((_, index) => (
             <span
               className={
-                index < strength ? 'h-1 rounded bg-orange-600' : 'h-1 rounded bg-slate-200'
+                index < strength
+                  ? 'h-1 rounded bg-primary text-primary-foreground'
+                  : 'h-1 rounded bg-slate-200'
               }
               key={index}
             />
@@ -113,7 +115,7 @@ export function RegisterForm() {
           id="confirmPassword"
           type="password"
           autoComplete="new-password"
-          className="h-10 w-full rounded-md border px-3 text-sm outline-none focus:ring-2 focus:ring-orange-500"
+          className="h-10 w-full rounded-md border px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
           {...register('confirmPassword')}
         />
         {errors.confirmPassword ? (
@@ -127,7 +129,7 @@ export function RegisterForm() {
 
       <p className="text-center text-sm text-slate-600">
         Đã có tài khoản?{' '}
-        <Link className="text-orange-700 hover:underline" href="/login">
+        <Link className="text-primary hover:underline" href="/login">
           Đăng nhập
         </Link>
       </p>

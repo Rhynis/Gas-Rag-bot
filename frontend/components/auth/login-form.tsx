@@ -8,6 +8,13 @@ import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { loginSchema, type LoginFormValues } from '@/lib/validations/auth'
 
+function getSafeRedirectPath(value: string | null): string {
+  if (!value || !value.startsWith('/') || value.startsWith('//') || value.includes('://')) {
+    return '/'
+  }
+  return value
+}
+
 export function LoginForm() {
   const searchParams = useSearchParams()
   const { login, isLoading } = useAuth()
@@ -21,7 +28,7 @@ export function LoginForm() {
   })
 
   const onSubmit = async (values: LoginFormValues) => {
-    await login(values.email, values.password, searchParams.get('redirectTo') ?? '/')
+    await login(values.email, values.password, getSafeRedirectPath(searchParams.get('redirectTo')))
   }
 
   return (
@@ -33,7 +40,7 @@ export function LoginForm() {
         <input
           id="email"
           autoComplete="email"
-          className="h-10 w-full rounded-md border px-3 text-sm outline-none focus:ring-2 focus:ring-orange-500"
+          className="h-10 w-full rounded-md border px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
           {...register('email')}
         />
         {errors.email ? <p className="text-sm text-red-600">{errors.email.message}</p> : null}
@@ -47,17 +54,17 @@ export function LoginForm() {
           id="password"
           type="password"
           autoComplete="current-password"
-          className="h-10 w-full rounded-md border px-3 text-sm outline-none focus:ring-2 focus:ring-orange-500"
+          className="h-10 w-full rounded-md border px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
           {...register('password')}
         />
         {errors.password ? <p className="text-sm text-red-600">{errors.password.message}</p> : null}
       </div>
 
       <div className="flex items-center justify-between text-sm">
-        <Link className="text-orange-700 hover:underline" href="/forgot-password">
+        <Link className="text-primary hover:underline" href="/forgot-password">
           Quên mật khẩu?
         </Link>
-        <Link className="text-orange-700 hover:underline" href="/register">
+        <Link className="text-primary hover:underline" href="/register">
           Đăng ký
         </Link>
       </div>
