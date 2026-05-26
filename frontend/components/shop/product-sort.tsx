@@ -1,0 +1,48 @@
+'use client'
+
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+
+const sortOptions = {
+  'created_at:desc': 'Mới nhất',
+  'price:asc': 'Giá thấp đến cao',
+  'price:desc': 'Giá cao đến thấp',
+  'name:asc': 'Tên A-Z',
+}
+
+export function ProductSort() {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const value = `${searchParams.get('sort_by') ?? 'created_at'}:${searchParams.get('sort_order') ?? 'desc'}`
+
+  function updateSort(nextValue: string) {
+    const [sortBy, sortOrder] = nextValue.split(':')
+    const next = new URLSearchParams(searchParams.toString())
+    if (sortBy) next.set('sort_by', sortBy)
+    if (sortOrder) next.set('sort_order', sortOrder)
+    next.delete('skip')
+    router.replace(`${pathname}?${next.toString()}`)
+  }
+
+  return (
+    <Select value={value in sortOptions ? value : 'created_at:desc'} onValueChange={updateSort}>
+      <SelectTrigger>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {Object.entries(sortOptions).map(([optionValue, label]) => (
+          <SelectItem key={optionValue} value={optionValue}>
+            {label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}
