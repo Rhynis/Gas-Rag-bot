@@ -14,8 +14,8 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-os.environ["DATABASE_URL"] = (
-    "postgresql+asyncpg://gasbot:gasbot_dev_password@localhost:5432/gasbot_dev"
+os.environ.setdefault(
+    "DATABASE_URL", "postgresql+asyncpg://gasbot:gasbot_dev_password@localhost:5432/gasbot_dev"
 )
 os.environ["JWT_SECRET_KEY"] = "test_secret_key_at_least_32_characters_long"
 os.environ["REDIS_URL"] = "redis://localhost:6379/0"
