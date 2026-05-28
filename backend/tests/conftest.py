@@ -3,6 +3,7 @@
 import os
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
+from decimal import Decimal
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -10,6 +11,8 @@ import pytest
 import pytest_asyncio
 from fakeredis.aioredis import FakeRedis
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 os.environ["DATABASE_URL"] = (
     "postgresql+asyncpg://gasbot:gasbot_dev_password@localhost:5432/gasbot_dev"
@@ -97,3 +100,69 @@ async def mock_redis() -> AsyncGenerator[FakeRedis, None]:
     finally:
         await redis.flushall()
         await redis.aclose()
+
+
+@pytest_asyncio.fixture
+async def product_session() -> AsyncGenerator[AsyncSession, None]:
+    """Create an isolated Postgres-backed product session."""
+    from app.db.base import Base
+    from app.db.session import AsyncSessionLocal, engine
+
+    await engine.dispose()
+    async with engine.begin() as conn:
+        await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'))
+        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
+        await conn.run_sync(Base.metadata.create_all)
+        await conn.execute(text("TRUNCATE TABLE products RESTART IDENTITY CASCADE"))
+
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.rollback()
+
+    async with engine.begin() as conn:
+        await conn.execute(text("TRUNCATE TABLE products RESTART IDENTITY CASCADE"))
+
+    await engine.dispose()
+
+
+def product_data(
+    sku: str = "GAS-12-SAIGON",
+    name: str = "Binh gas 12kg",
+    brand: str = "Saigon Petro",
+    price: Decimal = Decimal("350000"),
+    stock_quantity: int = 20,
+) -> object:
+    """Return valid product creation data."""
+    from app.schemas.product import ProductCreate
+
+    return ProductCreate(
+        sku=sku,
+        name=name,
+        brand=brand,
+        size_kg=Decimal("12"),
+        price=price,
+        stock_quantity=stock_quantity,
+        description="Binh gas gia dinh",
+        image_url="https://example.com/gas-12kg.jpg",
+        safety_info="Dat binh noi thoang khi.",
+    )
+
+
+async def create_product(
+    session: AsyncSession,
+    **overrides: object,
+) -> object:
+    """Create and commit a product for product tests."""
+    from app.models.product import Product
+    from app.repositories.product_repository import ProductRepository
+    from app.schemas.product import ProductCreate
+
+    data = product_data(**overrides)
+    if not isinstance(data, ProductCreate):
+        raise TypeError("product_data returned unexpected type")
+    product = await ProductRepository(session).create(data)
+    await session.commit()
+    assert isinstance(product, Product)
+    return product
