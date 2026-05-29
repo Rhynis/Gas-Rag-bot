@@ -6,6 +6,7 @@ from app.api.v1.endpoints import (
     admin_dashboard,
     admin_users,
     auth,
+    conversations,
     knowledge_base,
     orders,
     products,
@@ -20,3 +21,4 @@ api_router.include_router(admin_dashboard.router, tags=["Admin"])
 api_router.include_router(admin_users.router, tags=["Admin"])
 api_router.include_router(knowledge_base.router, tags=["Knowledge Base"])
 api_router.include_router(rag.router, tags=["RAG"])
+api_router.include_router(conversations.router, tags=["Conversations"])
