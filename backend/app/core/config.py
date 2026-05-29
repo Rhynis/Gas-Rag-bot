@@ -41,11 +41,13 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
 
     LLM_PROVIDER: Literal["ollama", "gemini"] = "ollama"
-    OLLAMA_URL: str = "http://localhost:11434"
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "qwen2.5:7b-instruct-q4_K_M"
-    OLLAMA_TIMEOUT: int = 120
-    GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-2.0-flash"
+    OLLAMA_EMBED_MODEL: str = "nomic-embed-text"
+    OLLAMA_TIMEOUT: int = 60
+    GEMINI_API_KEY: str | None = None
+    GEMINI_MODEL: str = "gemini-2.0-flash-exp"
+    GEMINI_EMBED_MODEL: str = "text-embedding-004"
 
     EMBEDDING_MODEL: str = "keepitreal/vietnamese-sbert"
     EMBEDDING_DIMENSIONS: int = 768

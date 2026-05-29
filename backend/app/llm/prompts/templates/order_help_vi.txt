@@ -1,0 +1,10 @@
+Để đặt hàng gas, tôi cần các thông tin sau:
+
+1. Loại bình gas (thương hiệu, kích cỡ): ${product_info}
+2. Số lượng cần đặt
+3. Địa chỉ giao hàng (số nhà, đường, phường, quận)
+4. Số điện thoại liên hệ
+5. Có cần đổi bình cũ không?
+6. Phương thức thanh toán: COD hoặc chuyển khoản?
+
+Bạn vui lòng cung cấp thông tin để tôi tạo đơn hàng nhé.
