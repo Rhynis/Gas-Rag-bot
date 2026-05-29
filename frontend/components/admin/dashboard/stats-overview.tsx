@@ -1,6 +1,13 @@
 'use client'
 
-import { CircleDollarSign, Clock3, PackageSearch, ShoppingCart, UserPlus, Users } from 'lucide-react'
+import {
+  CircleDollarSign,
+  Clock3,
+  PackageSearch,
+  ShoppingCart,
+  UserPlus,
+  Users,
+} from 'lucide-react'
 import { KpiCard } from '@/components/admin/dashboard/kpi-card'
 import { useAdminDashboard } from '@/lib/hooks/use-admin'
 import { formatNumber, formatPrice } from '@/lib/utils/format'

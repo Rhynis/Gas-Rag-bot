@@ -54,9 +54,13 @@ async def get_admin_dashboard(
     product_service = ProductService(ProductRepository(session))
     low_stock_products = await product_service.get_low_stock_products(admin)
 
-    orders_today_statement = select(func.count()).select_from(Order).where(
-        Order.created_at >= day_start,
-        Order.created_at <= day_end,
+    orders_today_statement = (
+        select(func.count())
+        .select_from(Order)
+        .where(
+            Order.created_at >= day_start,
+            Order.created_at <= day_end,
+        )
     )
     revenue_today_statement = select(func.coalesce(func.sum(Order.total_amount), 0)).where(
         Order.created_at >= day_start,
@@ -64,9 +68,13 @@ async def get_admin_dashboard(
         Order.status != "cancelled",
     )
     users_total_statement = select(func.count()).select_from(User)
-    users_new_today_statement = select(func.count()).select_from(User).where(
-        User.created_at >= day_start,
-        User.created_at <= day_end,
+    users_new_today_statement = (
+        select(func.count())
+        .select_from(User)
+        .where(
+            User.created_at >= day_start,
+            User.created_at <= day_end,
+        )
     )
 
     orders_today = int((await session.execute(orders_today_statement)).scalar_one())

@@ -56,10 +56,7 @@ export async function updateAdminUserRole(userId: string, role: UserRole): Promi
   return response.data
 }
 
-export async function updateAdminUserStatus(
-  userId: string,
-  isActive: boolean
-): Promise<AdminUser> {
+export async function updateAdminUserStatus(userId: string, isActive: boolean): Promise<AdminUser> {
   const response = await apiClient.patch<AdminUser>(`/api/v1/admin/users/${userId}/status`, {
     is_active: isActive,
   })
