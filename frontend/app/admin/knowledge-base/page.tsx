@@ -2,7 +2,7 @@
 
 import { FilePlus, Upload } from 'lucide-react'
 import Link from 'next/link'
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { KbImportDialog } from '@/components/admin/knowledge-base/kb-import-dialog'
 import { KbSearchTest } from '@/components/admin/knowledge-base/kb-search-test'
@@ -31,38 +31,39 @@ export default function AdminKnowledgeBasePage() {
   const [activeOnly, setActiveOnly] = useState(true)
   const [isLoading, setIsLoading] = useState(true)
   const [importOpen, setImportOpen] = useState(false)
-
-  const loadDocuments = useCallback(async () => {
-    setIsLoading(true)
-    try {
-      const response = await apiClient.get<KnowledgeBaseListResponse>(
-        '/api/v1/admin/knowledge-base',
-        {
-          params: {
-            limit: 100,
-            category: category || undefined,
-            active_only: activeOnly,
-          },
-        }
-      )
-      setDocuments(response.data.items)
-    } catch (caught) {
-      toast.error(caught instanceof Error ? caught.message : 'Không thể tải tài liệu')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [activeOnly, category])
+  const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
-    void loadDocuments()
-  }, [loadDocuments])
+    let cancelled = false
+
+    async function load() {
+      setIsLoading(true)
+      try {
+        const response = await apiClient.get<KnowledgeBaseListResponse>(
+          '/api/v1/admin/knowledge-base',
+          { params: { limit: 100, category: category || undefined, active_only: activeOnly } }
+        )
+        if (!cancelled) setDocuments(response.data.items)
+      } catch (caught) {
+        if (!cancelled)
+          toast.error(caught instanceof Error ? caught.message : 'Không thể tải tài liệu')
+      } finally {
+        if (!cancelled) setIsLoading(false)
+      }
+    }
+
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [activeOnly, category, refreshKey])
 
   async function deleteDocument(documentId: string) {
     if (!window.confirm('Ẩn tài liệu này khỏi tìm kiếm?')) return
     try {
       await apiClient.delete(`/api/v1/admin/knowledge-base/${documentId}`)
       toast.success('Đã ẩn tài liệu')
-      await loadDocuments()
+      setRefreshKey((k) => k + 1)
     } catch (caught) {
       toast.error(caught instanceof Error ? caught.message : 'Không thể ẩn tài liệu')
     }
@@ -169,7 +170,7 @@ export default function AdminKnowledgeBasePage() {
       <KbImportDialog
         open={importOpen}
         onOpenChange={setImportOpen}
-        onImported={() => void loadDocuments()}
+        onImported={() => setRefreshKey((k) => k + 1)}
       />
     </section>
   )
