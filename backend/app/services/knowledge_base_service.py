@@ -160,8 +160,7 @@ class KnowledgeBaseService:
             )
 
         texts = [
-            self._embedding_text(str(item["title"]), str(item["content"]))
-            for item in documents
+            self._embedding_text(str(item["title"]), str(item["content"])) for item in documents
         ]
         embeddings = await self.embedding_service.embed_batch(texts, batch_size=32)
         created = await self.repository.create_batch(list(zip(documents, embeddings, strict=True)))
