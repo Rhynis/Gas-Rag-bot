@@ -1,9 +1,14 @@
+'use client'
+
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { ArrowLeft, Flame, ShieldCheck } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StockBadge } from '@/components/shop/stock-badge'
+import { useCartStore } from '@/lib/stores/cart-store'
 import { formatPrice } from '@/lib/utils/format'
 import type { Product } from '@/types/product'
 
@@ -12,7 +17,13 @@ type ProductDetailProps = {
 }
 
 export function ProductDetail({ product }: ProductDetailProps) {
+  const router = useRouter()
+  const addItem = useCartStore((state) => state.addItem)
   const inStock = product.stock_quantity > 0
+  const addToCart = () => {
+    addItem(product, 1)
+    toast.success('Đã thêm vào giỏ hàng')
+  }
 
   return (
     <section className="mx-auto max-w-6xl space-y-6 px-4 py-8">
@@ -72,8 +83,17 @@ export function ProductDetail({ product }: ProductDetailProps) {
           ) : null}
 
           <div className="flex flex-wrap gap-3">
-            <Button disabled={!inStock}>Thêm vào giỏ</Button>
-            <Button disabled={!inStock} variant="outline">
+            <Button disabled={!inStock} onClick={addToCart}>
+              Thêm vào giỏ
+            </Button>
+            <Button
+              disabled={!inStock}
+              variant="outline"
+              onClick={() => {
+                addItem(product, 1)
+                router.push('/checkout')
+              }}
+            >
               Mua ngay
             </Button>
           </div>

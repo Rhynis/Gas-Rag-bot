@@ -1,0 +1,115 @@
+export type OrderStatus = 'pending' | 'confirmed' | 'shipping' | 'delivered' | 'cancelled'
+export type PaymentMethod = 'cod' | 'bank_transfer'
+export type PaymentStatus = 'pending' | 'paid' | 'refunded'
+export type OrderSource = 'website' | 'chatbot'
+
+export interface OrderItemCreate {
+  product_id: string
+  quantity: number
+  is_exchange: boolean
+}
+
+export interface VatInfo {
+  company_name: string
+  tax_code: string
+  address: string
+}
+
+export interface CheckoutRequest {
+  items: OrderItemCreate[]
+  customer_name: string
+  customer_phone: string
+  customer_email?: string | null
+  delivery_address: string
+  delivery_ward?: string | null
+  delivery_district?: string | null
+  delivery_city: string
+  delivery_notes?: string | null
+  different_recipient_name?: string | null
+  different_recipient_phone?: string | null
+  payment_method: PaymentMethod
+  vat_invoice_requested: boolean
+  vat_info?: VatInfo | null
+  customer_notes?: string | null
+  source: OrderSource
+  referral_conversation_id?: string | null
+}
+
+export interface OrderItem {
+  id: string
+  order_id: string
+  product_id: string | null
+  product_name: string
+  product_brand: string | null
+  product_size_kg: string | null
+  quantity: number
+  unit_price: string
+  subtotal: string
+  is_exchange: boolean
+  created_at: string
+}
+
+export interface Order {
+  id: string
+  order_number: string
+  user_id: string | null
+  customer_name: string
+  customer_phone: string
+  customer_email: string | null
+  delivery_address: string
+  delivery_ward: string | null
+  delivery_district: string | null
+  delivery_city: string
+  delivery_notes: string | null
+  different_recipient_name: string | null
+  different_recipient_phone: string | null
+  subtotal: string
+  shipping_fee: string
+  total_amount: string
+  vat_invoice_requested: boolean
+  vat_info: VatInfo | null
+  payment_method: PaymentMethod
+  payment_status: PaymentStatus
+  status: OrderStatus
+  source: OrderSource
+  referral_conversation_id: string | null
+  customer_notes: string | null
+  internal_notes: string | null
+  cancelled_at: string | null
+  cancelled_reason: string | null
+  delivered_at: string | null
+  created_at: string
+  updated_at: string
+  items: OrderItem[]
+}
+
+export interface OrderListResponse {
+  items: Order[]
+  total: number
+  page: number
+  limit: number
+  has_more: boolean
+}
+
+export interface GuestOrderLookup {
+  order_number: string
+  phone: string
+}
+
+export interface OrderSearchParams {
+  status?: OrderStatus
+  source?: OrderSource
+  search?: string
+  skip?: number
+  limit?: number
+}
+
+export interface OrderStatusUpdate {
+  new_status: OrderStatus
+  notes?: string | null
+}
+
+export interface OrderCancelRequest {
+  reason?: string | null
+  phone?: string | null
+}
