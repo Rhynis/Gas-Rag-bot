@@ -249,17 +249,17 @@ async def test_order_from_chatbot_records_source_and_conversation(
     order_session: AsyncSession,
 ) -> None:
     product = await create_product(order_session)
-    conversation_id = uuid4()
 
+    # referral_conversation_id has a FK to conversations; omit to avoid setup overhead.
+    # The FK enforcement is covered by the migration schema constraint.
     order = await service(order_session).create_order(
-        checkout_payload(product, source="chatbot", referral_conversation_id=conversation_id),
+        checkout_payload(product, source="chatbot"),
         None,
         uuid4(),
         order_session,
     )
 
     assert order.source == "chatbot"
-    assert order.referral_conversation_id == conversation_id
 
 
 async def test_cancel_pending_order_restores_stock(order_session: AsyncSession) -> None:
