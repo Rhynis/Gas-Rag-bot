@@ -157,7 +157,11 @@ export function KbForm({ documentId }: KbFormProps) {
         />
       </div>
       <div className="flex justify-end gap-3">
-        <Button type="button" variant="outline" onClick={() => router.push('/admin/knowledge-base')}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.push('/admin/knowledge-base')}
+        >
           Hủy
         </Button>
         <Button type="submit" disabled={isSaving}>

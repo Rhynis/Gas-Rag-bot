@@ -50,7 +50,9 @@ export function KbImportDialog({ open, onOpenChange, onImported }: KbImportDialo
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Nhập tài liệu</DialogTitle>
-          <DialogDescription>Hỗ trợ CSV, JSON, TXT hoặc Markdown có front matter.</DialogDescription>
+          <DialogDescription>
+            Hỗ trợ CSV, JSON, TXT hoặc Markdown có front matter.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <input

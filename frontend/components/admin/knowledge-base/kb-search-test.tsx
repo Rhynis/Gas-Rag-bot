@@ -5,10 +5,15 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { apiClient } from '@/lib/api/client'
-import type { KnowledgeBaseDocument, KnowledgeCategory } from '@/components/admin/knowledge-base/kb-form'
+import type {
+  KnowledgeBaseDocument,
+  KnowledgeCategory,
+} from '@/components/admin/knowledge-base/kb-form'
 
-interface SearchResult
-  extends Pick<KnowledgeBaseDocument, 'id' | 'title' | 'content' | 'category' | 'source'> {
+interface SearchResult extends Pick<
+  KnowledgeBaseDocument,
+  'id' | 'title' | 'content' | 'category' | 'source'
+> {
   similarity: number
 }
 
