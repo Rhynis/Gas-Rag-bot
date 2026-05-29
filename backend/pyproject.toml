@@ -28,6 +28,7 @@ module = [
   "app.api.v1.endpoints.admin_users",
   "app.api.v1.endpoints.admin_dashboard",
   "app.api.v1.endpoints.knowledge_base",
+  "app.api.v1.endpoints.rag",
 ]
 disable_error_code = ["type-arg"]
 
