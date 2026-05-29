@@ -112,7 +112,8 @@ async def product_session() -> AsyncGenerator[AsyncSession, None]:
     async with engine.begin() as conn:
         await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'))
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
-        await conn.run_sync(Base.metadata.create_all)
+        tables = [table for table in Base.metadata.sorted_tables if table.name != "knowledge_base"]
+        await conn.run_sync(lambda sync_conn: Base.metadata.create_all(sync_conn, tables=tables))
         await conn.execute(text("TRUNCATE TABLE products RESTART IDENTITY CASCADE"))
 
     async with AsyncSessionLocal() as session:
@@ -137,7 +138,8 @@ async def order_session() -> AsyncGenerator[AsyncSession, None]:
     async with engine.begin() as conn:
         await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'))
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
-        await conn.run_sync(Base.metadata.create_all)
+        tables = [table for table in Base.metadata.sorted_tables if table.name != "knowledge_base"]
+        await conn.run_sync(lambda sync_conn: Base.metadata.create_all(sync_conn, tables=tables))
         await conn.execute(
             text("TRUNCATE TABLE order_items, orders, products, users RESTART IDENTITY CASCADE")
         )

@@ -1,6 +1,6 @@
 'use client'
 
-import { ClipboardList, LayoutDashboard, Package, Users } from 'lucide-react'
+import { BookOpenText, ClipboardList, LayoutDashboard, Package, Users } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState, type ReactNode } from 'react'
@@ -15,6 +15,7 @@ const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/products', label: 'Sản phẩm', icon: Package },
   { href: '/admin/orders', label: 'Đơn hàng', icon: ClipboardList },
+  { href: '/admin/knowledge-base', label: 'Knowledge Base', icon: BookOpenText },
   { href: '/admin/users', label: 'Người dùng', icon: Users },
 ]
 
