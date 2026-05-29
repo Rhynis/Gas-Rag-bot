@@ -9,6 +9,7 @@ from app.api.v1.endpoints import (
     knowledge_base,
     orders,
     products,
+    rag,
 )
 
 api_router = APIRouter()
@@ -18,3 +19,4 @@ api_router.include_router(orders.router, tags=["Orders"])
 api_router.include_router(admin_dashboard.router, tags=["Admin"])
 api_router.include_router(admin_users.router, tags=["Admin"])
 api_router.include_router(knowledge_base.router, tags=["Knowledge Base"])
+api_router.include_router(rag.router, tags=["RAG"])
