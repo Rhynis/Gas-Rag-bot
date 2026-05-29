@@ -1,6 +1,7 @@
 """Authentication dependencies."""
 
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import Cookie, Depends, Header
 from fastapi.security import OAuth2PasswordBearer
@@ -84,3 +85,10 @@ async def get_current_user_optional(
         return await auth_service.verify_token(selected_token)
     except GasBotException:
         return None
+
+
+def validate_idempotency_key(
+    idempotency_key: Annotated[UUID, Header(alias="Idempotency-Key")],
+) -> UUID:
+    """Extract and validate the required checkout idempotency key."""
+    return idempotency_key

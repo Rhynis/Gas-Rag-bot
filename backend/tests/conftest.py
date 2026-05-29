@@ -127,6 +127,35 @@ async def product_session() -> AsyncGenerator[AsyncSession, None]:
     await engine.dispose()
 
 
+@pytest_asyncio.fixture
+async def order_session() -> AsyncGenerator[AsyncSession, None]:
+    """Create an isolated Postgres-backed order session."""
+    from app.db.base import Base
+    from app.db.session import AsyncSessionLocal, engine
+
+    await engine.dispose()
+    async with engine.begin() as conn:
+        await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'))
+        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
+        await conn.run_sync(Base.metadata.create_all)
+        await conn.execute(
+            text("TRUNCATE TABLE order_items, orders, products, users RESTART IDENTITY CASCADE")
+        )
+
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.rollback()
+
+    async with engine.begin() as conn:
+        await conn.execute(
+            text("TRUNCATE TABLE order_items, orders, products, users RESTART IDENTITY CASCADE")
+        )
+
+    await engine.dispose()
+
+
 def product_data(
     sku: str = "GAS-12-SAIGON",
     name: str = "Binh gas 12kg",

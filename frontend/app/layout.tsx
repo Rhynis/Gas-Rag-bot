@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { Toaster } from 'sonner'
 import { Providers } from '@/components/providers'
-import { UserMenu } from '@/components/shared/user-menu'
+import { Header } from '@/components/shared/header'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -22,18 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <Providers>
           <div className="min-h-screen bg-slate-50">
-            <header className="border-b bg-white">
-              <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-                <Link href="/" className="text-lg font-semibold text-orange-700">
-                  GasBot Vietnam
-                </Link>
-                <nav className="flex items-center gap-4 text-sm">
-                  <Link href="/products">Sản phẩm</Link>
-                  <Link href="/cart">Giỏ hàng</Link>
-                  <UserMenu />
-                </nav>
-              </div>
-            </header>
+            <Header />
             <main>{children}</main>
           </div>
           <Toaster richColors position="top-right" />
