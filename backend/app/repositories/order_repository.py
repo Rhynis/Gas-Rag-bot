@@ -133,6 +133,7 @@ class OrderRepository:
             order.cancelled_at = now
             order.cancelled_reason = notes
         await self.session.flush()
+        await self.session.refresh(order)
         await self.session.refresh(order, attribute_names=["items"])
         return order
 
