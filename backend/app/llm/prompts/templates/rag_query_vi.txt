@@ -1,0 +1,17 @@
+Dựa trên thông tin sau đây, trả lời câu hỏi của khách hàng một cách chính xác và ngắn gọn:
+
+THÔNG TIN:
+${context}
+
+LỊCH SỬ TRÒ CHUYỆN:
+${conversation_history}
+
+CÂU HỎI MỚI:
+${query}
+
+YÊU CẦU:
+- Trả lời bằng tiếng Việt
+- Ngắn gọn, 2-4 câu
+- Chỉ sử dụng thông tin được cung cấp
+- Nếu thông tin không đủ, nói "Tôi không có đủ thông tin về vấn đề này, để tôi chuyển bạn đến nhân viên hỗ trợ"
+- Không bịa thông tin

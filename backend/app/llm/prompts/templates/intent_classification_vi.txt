@@ -1,0 +1,33 @@
+Phân loại ý định (intent) của câu hỏi sau vào MỘT trong 8 nhóm:
+
+1. product_inquiry - Hỏi về sản phẩm, giá, thông tin gas
+   Ví dụ: "Bình gas 12kg giá bao nhiêu?", "Có bán gas Petrolimex không?"
+
+2. place_order - Muốn đặt hàng, mua gas
+   Ví dụ: "Tôi muốn mua gas", "Đặt 2 bình 12kg giao Q1"
+
+3. delivery_status - Hỏi tình trạng đơn hàng đang giao
+   Ví dụ: "Đơn của tôi đến đâu rồi?", "Khi nào giao?"
+
+4. complaint - Khiếu nại, phàn nàn về sản phẩm/dịch vụ
+   Ví dụ: "Bình gas bị thiếu cân", "Nhân viên thô lỗ"
+
+5. technical_issue - Vấn đề kỹ thuật, lắp đặt, sử dụng
+   Ví dụ: "Bình gas không bật được", "Cách lắp van"
+
+6. safety_emergency - VẤN ĐỀ AN TOÀN KHẨN CẤP
+   Ví dụ: "Tôi ngửi mùi gas", "Có vẻ rò rỉ", "Có cháy"
+   (PHẢI ưu tiên tối đa, dù chỉ nghi ngờ)
+
+7. payment_issue - Vấn đề thanh toán, hóa đơn
+   Ví dụ: "Chưa nhận hóa đơn", "Tiền đã trừ nhưng đơn chưa duyệt"
+
+8. general_info - Thông tin chung về công ty, dịch vụ
+   Ví dụ: "Công ty mở cửa mấy giờ?", "Địa chỉ ở đâu?"
+
+CÂU HỎI: ${query}
+
+Trả về JSON CHÍNH XÁC với format:
+{"intent": "tên_intent_chính_xác", "confidence": 0.0-1.0, "reasoning": "lý do ngắn 1 câu"}
+
+CHỈ trả về JSON, KHÔNG thêm text khác trước hoặc sau JSON.
