@@ -6,7 +6,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
-from sqlalchemy import func, select
+from sqlalchemy import ColumnElement, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.dependencies.auth import get_current_admin
@@ -115,7 +115,7 @@ async def list_admin_users(
 ) -> AdminUserListResponse:
     """Return users with admin-only filtering and pagination."""
     del request, admin
-    filters = []
+    filters: list[ColumnElement[bool]] = []
     if email:
         filters.append(User.email.ilike(f"%{email.lower()}%"))
     if role:
