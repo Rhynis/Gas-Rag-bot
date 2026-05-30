@@ -22,8 +22,12 @@ ENV HF_HOME=/home/gasbot/.cache/huggingface
 
 COPY --chown=gasbot:gasbot . .
 
-# The gasbot user must own its home dir to write the model cache at runtime.
-RUN mkdir -p /home/gasbot/.cache && chown -R gasbot:gasbot /home/gasbot
+# The gasbot user needs a writable cache dir for the runtime model download.
+# Only chown the (empty) cache dir + home entry — never the large .local tree,
+# which would duplicate ~GB of deps into a new layer and bloat the image.
+RUN mkdir -p /home/gasbot/.cache/huggingface \
+  && chown -R gasbot:gasbot /home/gasbot/.cache \
+  && chown gasbot:gasbot /home/gasbot
 
 USER gasbot
 
