@@ -11,6 +11,7 @@ from app.api.v1.endpoints import (
     orders,
     products,
     rag,
+    review,
 )
 
 api_router = APIRouter()
@@ -22,3 +23,4 @@ api_router.include_router(admin_users.router, tags=["Admin"])
 api_router.include_router(knowledge_base.router, tags=["Knowledge Base"])
 api_router.include_router(rag.router, tags=["RAG"])
 api_router.include_router(conversations.router, tags=["Conversations"])
+api_router.include_router(review.router, tags=["Review"])
