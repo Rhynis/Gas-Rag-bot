@@ -15,7 +15,17 @@ from app.db.base import Base
 
 config = context.config
 settings = get_settings()
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+
+
+def _async_database_url(url: str) -> str:
+    """Force the asyncpg driver and stay compatible with plain postgresql:// URLs."""
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
+
+
+DATABASE_URL = _async_database_url(settings.DATABASE_URL)
+config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
@@ -26,7 +36,7 @@ target_metadata = Base.metadata
 def run_migrations_offline() -> None:
     """Run migrations in offline mode."""
     context.configure(
-        url=settings.DATABASE_URL,
+        url=DATABASE_URL,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -50,6 +60,9 @@ async def run_async_migrations() -> None:
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        # Required for the Supabase (Supavisor) pooler, which rejects cached
+        # prepared statements and otherwise hangs asyncpg on the first query.
+        connect_args={"statement_cache_size": 0},
     )
 
     async with connectable.connect() as connection:

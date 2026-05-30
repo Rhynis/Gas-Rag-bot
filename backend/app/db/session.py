@@ -10,13 +10,24 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
+
+def _async_database_url(url: str) -> str:
+    """Force the asyncpg driver and stay compatible with plain postgresql:// URLs."""
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
+
+
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    _async_database_url(settings.DATABASE_URL),
     echo=settings.DEBUG,
     pool_size=10,
     max_overflow=20,
     pool_pre_ping=True,
     pool_recycle=3600,
+    # statement_cache_size=0 makes asyncpg work through the Supabase (Supavisor)
+    # pooler, which does not support cached prepared statements.
+    connect_args={"statement_cache_size": 0},
 )
 
 AsyncSessionLocal = async_sessionmaker(
