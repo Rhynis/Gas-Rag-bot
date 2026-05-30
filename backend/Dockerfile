@@ -17,8 +17,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
 COPY --from=builder /root/.local /home/gasbot/.local
 ENV PATH=/home/gasbot/.local/bin:$PATH
 ENV PYTHONUNBUFFERED=1
+# Writable HuggingFace cache so the non-root user can download the SBERT model.
+ENV HF_HOME=/home/gasbot/.cache/huggingface
 
 COPY --chown=gasbot:gasbot . .
+
+# The gasbot user must own its home dir to write the model cache at runtime.
+RUN mkdir -p /home/gasbot/.cache && chown -R gasbot:gasbot /home/gasbot
 
 USER gasbot
 
