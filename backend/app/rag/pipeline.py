@@ -79,7 +79,7 @@ class RAGPipeline:
             prompt=query,
             system_prompt=system_prompt,
             temperature=0.3,
-            max_tokens=512,
+            max_tokens=2048,
         )
         await self.observability.track_generation(
             provider=self.llm_provider.provider_name,
@@ -141,7 +141,7 @@ class RAGPipeline:
             prompt=query,
             system_prompt=system_prompt,
             temperature=0.3,
-            max_tokens=512,
+            max_tokens=2048,
         ):
             yield chunk.delta
 

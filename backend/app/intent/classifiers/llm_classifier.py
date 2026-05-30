@@ -32,16 +32,27 @@ class LLMIntentClassifier(BaseIntentClassifier):
         response = await self.llm_provider.generate(
             prompt=prompt,
             temperature=0.0,
-            max_tokens=160,
+            # Thinking models (gemini-2.5/3.x) spend hundreds of output tokens on
+            # reasoning before emitting the JSON, so the budget must be generous.
+            max_tokens=2048,
         )
         return self._parse_response(response.text)
 
     def _parse_response(self, text: str) -> IntentResult:
         try:
-            payload = json.loads(text.strip())
+            payload = json.loads(self._extract_json(text))
             return self._payload_to_result(payload)
         except (json.JSONDecodeError, KeyError, TypeError, ValueError, ValidationError) as exc:
             raise LLMParsingError("Could not parse intent classification response") from exc
+
+    @staticmethod
+    def _extract_json(text: str) -> str:
+        """Pull the JSON object out of the response, tolerating fences/extra text."""
+        start = text.find("{")
+        end = text.rfind("}")
+        if start != -1 and end > start:
+            return text[start : end + 1]
+        return text.strip()
 
     @staticmethod
     def _payload_to_result(payload: dict[str, Any]) -> IntentResult:
