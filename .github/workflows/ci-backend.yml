@@ -55,4 +55,5 @@ jobs:
       - run: mypy app/
       - run: alembic upgrade head
       - run: pytest --cov --cov-fail-under=70
+      - run: python -m scripts.run_evaluation --suite safety
       - run: pip-audit --strict

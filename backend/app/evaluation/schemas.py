@@ -25,6 +25,9 @@ class EvaluationMetrics(BaseModel):
     context_recall: float = Field(default=0.0, ge=0, le=1)
     faithfulness: float = Field(default=0.0, ge=0, le=1)
     answer_relevancy: float = Field(default=0.0, ge=0, le=1)
+    intent_accuracy: float | None = Field(default=None, ge=0, le=1)
+    intent_macro_f1: float | None = Field(default=None, ge=0, le=1)
+    per_intent_f1: dict[str, float] = Field(default_factory=dict)
 
 
 class EvaluationReport(BaseModel):
