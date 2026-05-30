@@ -19,6 +19,21 @@ from app.llm.exceptions import (
 from app.llm.schemas import EmbeddingResponse, LLMResponse, LLMStreamChunk
 
 
+def _safe_response_text(response: Any) -> str:
+    """Extract text from a Gemini response without the fragile ``.text`` accessor.
+
+    ``response.text`` raises when a response has no plain text part — which
+    happens with thinking models (e.g. gemini-2.5/3.x) that return thought
+    parts. Build the text from candidate parts directly instead.
+    """
+    candidates = list(getattr(response, "candidates", []) or [])
+    if not candidates:
+        return ""
+    content = getattr(candidates[0], "content", None)
+    parts = list(getattr(content, "parts", []) or [])
+    return "".join(str(getattr(part, "text", "")) for part in parts if getattr(part, "text", ""))
+
+
 class GeminiProvider(BaseLLMProvider):
     """LLM provider using Google Gemini Flash API."""
 
@@ -120,7 +135,7 @@ class GeminiProvider(BaseLLMProvider):
         candidates = list(getattr(response, "candidates", []) or [])
         finish_reason = str(getattr(candidates[0], "finish_reason", "")) if candidates else None
         return LLMResponse(
-            text=str(getattr(response, "text", "")),
+            text=_safe_response_text(response),
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
             total_tokens=prompt_tokens + completion_tokens,
@@ -158,7 +173,7 @@ class GeminiProvider(BaseLLMProvider):
                 stream=True,
             )
             async for chunk in response_stream:
-                delta = str(getattr(chunk, "text", ""))
+                delta = _safe_response_text(chunk)
                 accumulated += delta
                 candidates = list(getattr(chunk, "candidates", []) or [])
                 finish_reason = (
