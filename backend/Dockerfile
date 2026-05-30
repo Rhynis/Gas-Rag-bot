@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
 
 COPY --from=builder /root/.local /home/gasbot/.local
 ENV PATH=/home/gasbot/.local/bin:$PATH
+ENV PYTHONUNBUFFERED=1
 
 COPY --chown=gasbot:gasbot . .
 
