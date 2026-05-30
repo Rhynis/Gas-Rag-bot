@@ -52,6 +52,7 @@ def create_app() -> FastAPI:
         title="GasBot Vietnam API",
         description="Simple gas LPG sales website with Vietnamese AI chatbot",
         version="0.1.0",
+        debug=settings.DEBUG,
         docs_url=None if settings.is_production else "/docs",
         redoc_url=None if settings.is_production else "/redoc",
         openapi_url=None if settings.is_production else "/openapi.json",
