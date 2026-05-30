@@ -4,3 +4,4 @@ coverage
 dist
 build
 package-lock.json
+next-env.d.ts
